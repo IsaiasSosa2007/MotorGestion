@@ -1,0 +1,5 @@
+# Archivos que genera NetBeans al compilar (cada uno los genera en su PC)
+MotorGestion/build/
+MotorGestion/dist/
+# Configuracion personal de NetBeans de cada compañero
+MotorGestion/nbproject/private/

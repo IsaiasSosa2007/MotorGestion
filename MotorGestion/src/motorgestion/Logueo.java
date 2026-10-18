@@ -3,6 +3,8 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package motorgestion;
+import java.sql.*;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -16,8 +18,11 @@ public class Logueo extends javax.swing.JFrame {
      * Creates new form Logueo
      */
     public Logueo() {
-        initComponents();
-    }
+    initComponents();
+    setTitle("MotorGestion - Ingreso");      // título de la ventana
+    setLocationRelativeTo(null);              // la abre centrada en la pantalla
+    getRootPane().setDefaultButton(btnEnv);   // Enter = apretar Ingresar
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -29,48 +34,100 @@ public class Logueo extends javax.swing.JFrame {
     private void initComponents() {
 
         lblContra = new javax.swing.JLabel();
-        txtContra = new javax.swing.JTextField();
         btnEnv = new javax.swing.JButton();
+        txtContra = new javax.swing.JPasswordField();
+        jLabel1 = new javax.swing.JLabel();
+        txtUsuario = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         lblContra.setText("CONTRASENA");
 
-        txtContra.addActionListener(this::txtContraActionPerformed);
+        btnEnv.setText("Ingresar");
+        btnEnv.addActionListener(this::btnEnvActionPerformed);
 
-        btnEnv.setText("enviar");
+        jLabel1.setText("USUARIO");
+
+        jLabel2.setText("MotorGestion – Ingreso");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(87, 87, 87)
-                .addComponent(lblContra)
-                .addGap(38, 38, 38)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnEnv)
-                    .addComponent(txtContra, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(87, 87, 87)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(lblContra, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(38, 38, 38)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(btnEnv, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(txtContra)
+                            .addComponent(txtUsuario)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(119, 119, 119)
+                        .addComponent(jLabel2)))
                 .addContainerGap(127, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(125, 125, 125)
+                .addGap(35, 35, 35)
+                .addComponent(jLabel2)
+                .addGap(37, 37, 37)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(lblContra)
                     .addComponent(txtContra, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(btnEnv)
-                .addContainerGap(112, Short.MAX_VALUE))
+                .addContainerGap(115, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void txtContraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtContraActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtContraActionPerformed
+    private void btnEnvActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnvActionPerformed
+String usuario = txtUsuario.getText().trim();
+String clave = new String(txtContra.getPassword());
+
+// 1. Validar que no estén vacíos
+if (usuario.isEmpty() || clave.isEmpty()) {
+    JOptionPane.showMessageDialog(this, "Completá usuario y contraseña.");
+    return;
+}
+
+// 2. Buscar al empleado. Los ? evitan la inyección SQL
+String sql = "SELECT nombre, rol FROM empleados WHERE usuario = ? AND contrasena = SHA2(?, 256)";
+
+try (Connection con = Conexion.getConexion();
+     PreparedStatement ps = con.prepareStatement(sql)) {
+
+    ps.setString(1, usuario);
+    ps.setString(2, clave);
+
+    try (ResultSet rs = ps.executeQuery()) {
+        if (rs.next()) {
+            // 3. Datos correctos: abrir el menú y cerrar el login
+            JOptionPane.showMessageDialog(this, "Bienvenido, " + rs.getString("nombre"));
+            new Inicio().setVisible(true);
+            this.dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.");
+            txtContra.setText("");
+        }
+    }
+
+} catch (SQLException e) {
+    JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos:\n" + e.getMessage());
+}        // TODO add your handling code here:
+    }//GEN-LAST:event_btnEnvActionPerformed
 
     /**
      * @param args the command line arguments
@@ -99,7 +156,10 @@ public class Logueo extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnEnv;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel lblContra;
-    private javax.swing.JTextField txtContra;
+    private javax.swing.JPasswordField txtContra;
+    private javax.swing.JTextField txtUsuario;
     // End of variables declaration//GEN-END:variables
 }
