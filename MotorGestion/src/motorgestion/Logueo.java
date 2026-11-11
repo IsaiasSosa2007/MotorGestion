@@ -104,7 +104,7 @@ if (usuario.isEmpty() || clave.isEmpty()) {
 }
 
 // 2. Buscar al empleado. Los ? evitan la inyección SQL
-String sql = "SELECT nombre, rol FROM empleados WHERE usuario = ? AND contrasena = SHA2(?, 256)";
+String sql = "SELECT e.nombre, u.tipoUsuario FROM usuarios u JOIN empleado e ON e.idempleado = u.empleado_idempleado WHERE u.nombre = ? AND u.clave = SHA2(?, 256)";
 
 try (Connection con = Conexion.getConexion();
      PreparedStatement ps = con.prepareStatement(sql)) {

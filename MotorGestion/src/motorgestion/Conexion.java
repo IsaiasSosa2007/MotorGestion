@@ -10,7 +10,7 @@ import java.sql.SQLException;
  */
 public class Conexion {
 
-private static final String URL = "jdbc:mysql://localhost:3307/MotorGestionV1";
+private static final String URL = "jdbc:mysql://localhost:3307/MotorGestion";
 private static final String USUARIO = "motorgestion";
 private static final String CLAVE = "motor2026";
 
