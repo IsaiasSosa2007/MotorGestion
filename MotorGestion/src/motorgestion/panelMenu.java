@@ -4,17 +4,160 @@
  */
 package motorgestion;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Window;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
+
 /**
  *
  * @author User
  */
 public class panelMenu extends javax.swing.JPanel {
 
+    // Botones que no estaban en el diseño original
+    private final JButton btnInicio = new JButton("Inicio");
+    private final JButton btnReparaciones = new JButton("Reparaciones");
+    private final JButton btnSalir = new JButton("Cerrar sesión");
+
     /**
-     * Creates new form panelMenu
+     * Barra de menu que aparece arriba de todas las pantallas:
+     * a la izquierda el logo y el nombre del sistema, a la derecha
+     * los botones para ir a cada seccion.
      */
     public panelMenu() {
         initComponents();
+        armarMenu();
+    }
+
+    /** Ordena el logo y los botones en una barra azul de alto fijo. */
+    private void armarMenu() {
+        removeAll();
+        setLayout(new BorderLayout(24, 0));
+        setBackground(Estilo.PRIMARIO);
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 3, 0, Estilo.ACENTO),   // linea naranja abajo
+                new EmptyBorder(10, 24, 10, 24)));
+
+        // --- Izquierda: logo chico + nombre del sistema + quien entro ---
+        Image logo = new ImageIcon(getClass().getResource("/motorgestion/Imagenes/LogoHiena3.png"))
+                .getImage().getScaledInstance(72, 72, Image.SCALE_SMOOTH);
+        lblimagen.setIcon(new ImageIcon(logo));
+        lblimagen.setText(null);
+
+        JLabel lblSistema = new JLabel("MotorGestion");
+        lblSistema.setFont(lblSistema.getFont().deriveFont(Font.BOLD, 23f));
+        lblSistema.setForeground(Color.WHITE);
+        JLabel lblTaller = new JLabel("Taller mecánico · AlfaMotors");
+        lblTaller.setForeground(Estilo.TEXTO_CLARO);
+        lblTaller.setFont(Estilo.NORMAL.deriveFont(15f));
+        // Letras grandes y claras sobre el azul: tienen que leerse en un proyector
+        JLabel lblUsuario = new JLabel(Sesion.hayUsuario()
+                ? Sesion.getNombre() + "  ·  " + Sesion.getRolTexto()
+                : " ");
+        lblUsuario.setForeground(Estilo.ACENTO_CLARO);
+        lblUsuario.setFont(Estilo.NEGRITA);
+
+        JPanel textos = new JPanel(new GridLayout(3, 1));
+        textos.setOpaque(false);
+        textos.add(lblSistema);
+        textos.add(lblTaller);
+        textos.add(lblUsuario);
+
+        JPanel marca = new JPanel(new BorderLayout(12, 0));
+        marca.setOpaque(false);
+        marca.add(lblimagen, BorderLayout.WEST);
+        marca.add(textos, BorderLayout.CENTER);
+
+        // --- Derecha: botones de navegacion, todos del mismo tamaño ---
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        botones.setOpaque(false);
+        for (JButton b : new JButton[]{btnInicio, btnReparaciones, btnClientes, btnVehiculos, btnProveedores, btnRepuestos, btnEmpleados}) {
+            prepararBoton(b, 104);
+            botones.add(b);
+        }
+        prepararBoton(btnReparaciones, 116);   // el texto mas largo necesita un poco mas
+        prepararBoton(btnSalir, 124);
+        botones.add(javax.swing.Box.createHorizontalStrut(12));   // separa "Cerrar sesion" del resto
+        botones.add(btnSalir);
+
+        // Empleados solo lo ve el administrador
+        btnEmpleados.setVisible(Sesion.esAdmin());
+        // Cerrar sesion solo tiene sentido si alguien entro
+        btnSalir.setVisible(Sesion.hayUsuario());
+
+        JPanel centrado = new JPanel(new GridBagLayout());   // centra los botones en vertical
+        centrado.setOpaque(false);
+        centrado.add(botones);
+
+        add(marca, BorderLayout.WEST);
+        add(centrado, BorderLayout.EAST);
+        // La marca no se encoge: si la ventana es angosta, los botones no la tapan
+        marca.setMinimumSize(marca.getPreferredSize());
+
+        btnInicio.addActionListener(e -> {
+            if (!(SwingUtilities.getWindowAncestor(this) instanceof Inicio)) {
+                Navegacion.ir(new Inicio(), this);
+            }
+        });
+        btnReparaciones.addActionListener(e -> {
+            if (!(SwingUtilities.getWindowAncestor(this) instanceof reparaciones)) {
+                Navegacion.ir(new reparaciones(), this);
+            }
+        });
+        btnSalir.addActionListener(e -> cerrarSesion());
+    }
+
+    /** Mismo tamaño y estilo para todos los botones, sin el recuadro punteado del foco. */
+    private void prepararBoton(JButton b, int ancho) {
+        Estilo.botonMenu(b, false);
+        b.setPreferredSize(new Dimension(ancho, 36));
+        b.setFocusable(false);
+    }
+
+    /** Cuando la barra ya esta dentro de una ventana, resalta el boton de esa pantalla. */
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JButton actual = null;
+        if (w instanceof Inicio) actual = btnInicio;
+        else if (w instanceof reparaciones) actual = btnReparaciones;
+        else if (w instanceof clientes) actual = btnClientes;
+        else if (w instanceof vehiculos) actual = btnVehiculos;
+        else if (w instanceof proveedores) actual = btnProveedores;
+        else if (w instanceof repuestos) actual = btnRepuestos;
+        else if (w instanceof empleados) actual = btnEmpleados;
+        if (actual != null) {
+            Estilo.botonMenu(actual, true);   // la pantalla actual queda en naranja
+        }
+    }
+
+    /** Pregunta, borra la sesion y vuelve a la pantalla de ingreso. */
+    private void cerrarSesion() {
+        if (!Dialogo.confirmar(this, "Cerrar sesión", "¿Cerrar la sesión de " + Sesion.getNombre() + "?",
+                "Cerrar sesión", false)) {
+            return;
+        }
+        Sesion.cerrar();
+        Window actual = SwingUtilities.getWindowAncestor(this);
+        new Logueo().setVisible(true);
+        if (actual != null) {
+            actual.dispose();
+        }
     }
 
     /**

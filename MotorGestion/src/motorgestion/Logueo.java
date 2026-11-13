@@ -3,8 +3,21 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package motorgestion;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
 import java.sql.*;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 
 /**
  *
@@ -18,11 +31,82 @@ public class Logueo extends javax.swing.JFrame {
      * Creates new form Logueo
      */
     public Logueo() {
-    initComponents();
-    setTitle("MotorGestion - Ingreso");      // título de la ventana
-    setLocationRelativeTo(null);              // la abre centrada en la pantalla
-    getRootPane().setDefaultButton(btnEnv);   // Enter = apretar Ingresar
-}
+        initComponents();
+        setTitle("MotorGestion - Ingreso");       // título de la ventana
+        armarPantalla();
+        getRootPane().setDefaultButton(btnEnv);   // Enter = apretar Ingresar
+        Navegacion.pantallaCompleta(this);        // ocupa toda la pantalla
+    }
+
+    /**
+     * Ocupa toda la pantalla (fondo azul) y pone en el centro una tarjeta blanca con el
+     * logo, el titulo y los campos de usuario y contraseña.
+     */
+    private void armarPantalla() {
+        // El fondo es un panel propio (FondoTaller) que dibuja el azul con tuercas.
+        // GridBagLayout centra la tarjeta en el medio de la pantalla.
+        setContentPane(new FondoTaller(new GridBagLayout()));
+
+        Image logo = new ImageIcon(getClass().getResource("/motorgestion/Imagenes/LogoHienaHD.png"))
+                .getImage().getScaledInstance(135, 135, Image.SCALE_SMOOTH);
+        JLabel lblLogo = new JLabel(new ImageIcon(logo));
+        jLabel2.setText("MotorGestion");
+        jLabel2.setFont(jLabel2.getFont().deriveFont(Font.BOLD, 30f));
+        jLabel2.setForeground(Estilo.PRIMARIO);
+        JLabel lblIngreso = new JLabel("Ingresá con tu usuario y contraseña");
+        lblIngreso.setForeground(Estilo.TEXTO_SUAVE);
+        lblIngreso.setFont(Estilo.NORMAL.deriveFont(15f));
+        jLabel1.setText("Usuario");
+        lblContra.setText("Contraseña");
+        jLabel1.setFont(Estilo.NEGRITA);
+        lblContra.setFont(Estilo.NEGRITA);
+        txtUsuario.setPreferredSize(new Dimension(320, 36));
+        txtContra.setPreferredSize(new Dimension(320, 36));
+        txtUsuario.setFont(Estilo.NORMAL.deriveFont(15f));
+        txtContra.setFont(Estilo.NORMAL.deriveFont(15f));
+        Estilo.botonPrimario(btnEnv);
+        btnEnv.setPreferredSize(new Dimension(320, 44));
+        btnEnv.setFont(btnEnv.getFont().deriveFont(Font.BOLD, 16f));
+
+        JPanel tarjeta = new JPanel(new GridBagLayout());
+        tarjeta.setBackground(Estilo.SUPERFICIE);
+        tarjeta.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(5, 0, 0, 0, Estilo.ACENTO),   // franja naranja arriba
+                new EmptyBorder(34, 56, 40, 56)));
+        GridBagConstraints g = new GridBagConstraints();
+        g.gridx = 0;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.insets = new Insets(0, 0, 4, 0);
+        lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
+        jLabel2.setHorizontalAlignment(SwingConstants.CENTER);
+        lblIngreso.setHorizontalAlignment(SwingConstants.CENTER);
+        tarjeta.add(lblLogo, g);
+        tarjeta.add(jLabel2, g);
+        g.insets = new Insets(0, 0, 28, 0);
+        tarjeta.add(lblIngreso, g);
+        g.insets = new Insets(0, 0, 4, 0);
+        tarjeta.add(jLabel1, g);
+        g.insets = new Insets(0, 0, 14, 0);
+        tarjeta.add(txtUsuario, g);
+        g.insets = new Insets(0, 0, 4, 0);
+        tarjeta.add(lblContra, g);
+        g.insets = new Insets(0, 0, 28, 0);
+        tarjeta.add(txtContra, g);
+        g.insets = new Insets(0, 0, 0, 0);
+        tarjeta.add(btnEnv, g);
+        // El rol (administrador o empleado) sale del usuario, por eso no hace
+        // falta el boton "Modo Admin": no se muestra.
+
+        // Debajo de la tarjeta, una linea chica con el nombre del taller
+        JLabel lblPie = new JLabel("AlfaMotors · Taller mecánico · Sistema de gestión de reparaciones");
+        lblPie.setForeground(Estilo.TEXTO_CLARO);
+        lblPie.setFont(Estilo.NORMAL);
+        GridBagConstraints centro = new GridBagConstraints();
+        centro.gridx = 0;
+        getContentPane().add(tarjeta, centro);
+        centro.insets = new Insets(18, 0, 0, 0);
+        getContentPane().add(lblPie, centro);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -126,8 +210,9 @@ try (Connection con = Conexion.getConexion();
     try (ResultSet rs = ps.executeQuery()) {
         if (rs.next()) {
             // 3. Datos correctos: abrir el menú y cerrar el login
-            JOptionPane.showMessageDialog(this, "Bienvenido, " + rs.getString("nombre"));
-            new Inicio().setVisible(true);
+            // Se guarda quien entro: el menu lo usa para mostrar u ocultar botones
+            Sesion.iniciar(rs.getString("nombre"), rs.getString("tipoUsuario"));
+            new Inicio().setVisible(true);   // Inicio se abre a pantalla completa
             this.dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Usuario o contraseña incorrectos.");
