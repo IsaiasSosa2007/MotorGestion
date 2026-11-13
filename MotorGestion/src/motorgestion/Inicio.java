@@ -64,6 +64,9 @@ public class Inicio extends javax.swing.JFrame {
         JPanel tarjetas = new JPanel(new GridLayout(1, 5, 16, 0));
         tarjetas.setOpaque(false);
         tarjetas.setMaximumSize(new java.awt.Dimension(1180, 120));
+        // Ancho comodo, pero se pueden achicar si la pantalla es mas chica
+        tarjetas.setPreferredSize(new java.awt.Dimension(1000, 110));
+        tarjetas.setMinimumSize(new java.awt.Dimension(950, 110));
         cargarResumen(tarjetas);
 
         JLabel lblAyuda = new JLabel("Elegí una sección en el menú de arriba para empezar.");

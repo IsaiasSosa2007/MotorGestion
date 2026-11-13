@@ -13,6 +13,8 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Window;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -32,6 +34,11 @@ public class panelMenu extends javax.swing.JPanel {
     private final JButton btnInicio = new JButton("Inicio");
     private final JButton btnReparaciones = new JButton("Reparaciones");
     private final JButton btnSalir = new JButton("Cerrar sesión");
+    // Las dos partes del menu (se guardan para poder reacomodarlas)
+    private JPanel marca;
+    private JPanel centrado;
+    /** true cuando el menu esta en dos filas (ventana angosta). */
+    private boolean enDosFilas = false;
 
     /**
      * Barra de menu que aparece arriba de todas las pantallas:
@@ -61,7 +68,7 @@ public class panelMenu extends javax.swing.JPanel {
         JLabel lblSistema = new JLabel("MotorGestion");
         lblSistema.setFont(lblSistema.getFont().deriveFont(Font.BOLD, 23f));
         lblSistema.setForeground(Color.WHITE);
-        JLabel lblTaller = new JLabel("Taller mecánico · AlfaMotors");
+        JLabel lblTaller = new JLabel("Gestión de talleres · AlfaMotors");
         lblTaller.setForeground(Estilo.TEXTO_CLARO);
         lblTaller.setFont(Estilo.NORMAL.deriveFont(15f));
         // Letras grandes y claras sobre el azul: tienen que leerse en un proyector
@@ -77,7 +84,7 @@ public class panelMenu extends javax.swing.JPanel {
         textos.add(lblTaller);
         textos.add(lblUsuario);
 
-        JPanel marca = new JPanel(new BorderLayout(12, 0));
+        marca = new JPanel(new BorderLayout(12, 0));
         marca.setOpaque(false);
         marca.add(lblimagen, BorderLayout.WEST);
         marca.add(textos, BorderLayout.CENTER);
@@ -99,14 +106,19 @@ public class panelMenu extends javax.swing.JPanel {
         // Cerrar sesion solo tiene sentido si alguien entro
         btnSalir.setVisible(Sesion.hayUsuario());
 
-        JPanel centrado = new JPanel(new GridBagLayout());   // centra los botones en vertical
+        centrado = new JPanel(new GridBagLayout());   // centra los botones en vertical
         centrado.setOpaque(false);
         centrado.add(botones);
 
         add(marca, BorderLayout.WEST);
         add(centrado, BorderLayout.EAST);
-        // La marca no se encoge: si la ventana es angosta, los botones no la tapan
-        marca.setMinimumSize(marca.getPreferredSize());
+        // Cada vez que cambia el ancho de la ventana, el menu se reacomoda
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                ajustarAlAncho();
+            }
+        });
 
         btnInicio.addActionListener(e -> {
             if (!(SwingUtilities.getWindowAncestor(this) instanceof Inicio)) {
@@ -122,6 +134,30 @@ public class panelMenu extends javax.swing.JPanel {
     }
 
     /** Mismo tamaño y estilo para todos los botones, sin el recuadro punteado del foco. */
+    /**
+     * Si el logo y los botones no entran en una sola fila (ventana chica,
+     * otra resolucion o un proyector), los botones pasan a una segunda fila
+     * debajo del logo, en vez de taparlo.
+     */
+    private void ajustarAlAncho() {
+        int necesario = marca.getPreferredSize().width + centrado.getPreferredSize().width + 24 + 48;
+        boolean dosFilas = getWidth() < necesario;
+        if (dosFilas == enDosFilas) {
+            return;   // ya esta bien acomodado
+        }
+        enDosFilas = dosFilas;
+        remove(centrado);
+        if (dosFilas) {
+            add(centrado, BorderLayout.SOUTH);
+            centrado.setBorder(new EmptyBorder(10, 0, 0, 0));   // espacio entre las dos filas
+        } else {
+            add(centrado, BorderLayout.EAST);
+            centrado.setBorder(null);
+        }
+        revalidate();
+        repaint();
+    }
+
     private void prepararBoton(JButton b, int ancho) {
         Estilo.botonMenu(b, false);
         b.setPreferredSize(new Dimension(ancho, 36));

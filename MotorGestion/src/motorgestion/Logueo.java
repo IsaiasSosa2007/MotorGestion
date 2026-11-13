@@ -98,7 +98,7 @@ public class Logueo extends javax.swing.JFrame {
         // falta el boton "Modo Admin": no se muestra.
 
         // Debajo de la tarjeta, una linea chica con el nombre del taller
-        JLabel lblPie = new JLabel("AlfaMotors · Taller mecánico · Sistema de gestión de reparaciones");
+        JLabel lblPie = new JLabel("MotorGestion · Desarrollado por AlfaMotors · 2026");
         lblPie.setForeground(Estilo.TEXTO_CLARO);
         lblPie.setFont(Estilo.NORMAL);
         GridBagConstraints centro = new GridBagConstraints();

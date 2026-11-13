@@ -25,6 +25,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -232,7 +233,7 @@ public class reparaciones extends javax.swing.JFrame {
         lista.setBorder(Estilo.bordeCaja());
         lista.add(tituloSeccion("ÓRDENES DE TRABAJO"), BorderLayout.NORTH);
         lista.add(scrollLista, BorderLayout.CENTER);
-        lista.setPreferredSize(new Dimension(700, 200));
+        lista.setPreferredSize(new Dimension(520, 200));
 
         // --- Derecha: ficha de la reparacion ---
         JLabel lblVacio = new JLabel("Elegí una reparación de la lista para ver su detalle.", SwingConstants.CENTER);
@@ -241,10 +242,18 @@ public class reparaciones extends javax.swing.JFrame {
         panelFicha.setBorder(Estilo.bordeCaja());
         panelFicha.add(lblVacio, "vacio");
         panelFicha.add(armarFicha(), "ficha");
-        panelFicha.setPreferredSize(new Dimension(480, 200));
+        panelFicha.setPreferredSize(new Dimension(400, 200));
 
         JSplitPane division = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, lista, panelFicha);
         division.setResizeWeight(0.6);   // el espacio que sobra se reparte 60% / 40%
+        // Cuando cambia el tamanio de la ventana, la lista vuelve a ocupar el 55% del ancho
+        // (asi en una pantalla chica la lista no queda aplastada)
+        division.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                division.setDividerLocation(0.55);
+            }
+        });
         division.setBorder(null);
         division.setDividerSize(16);
 
@@ -296,6 +305,27 @@ public class reparaciones extends javax.swing.JFrame {
         return columna;
     }
 
+    /**
+     * Acomoda una parte de un panel segun el ancho disponible: si "fija" y "movil"
+     * entran en un renglon, "movil" va en lugarAncho (al costado); si no, va en
+     * lugarAngosto (abajo). Asi en una pantalla chica nada se encima ni se corta.
+     */
+    private static void acomodarSegunAncho(JPanel panel, JComponent fija, JComponent movil,
+                                           String lugarAncho, String lugarAngosto) {
+        panel.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                int necesario = fija.getPreferredSize().width + movil.getPreferredSize().width + 8;
+                String lugar = (panel.getWidth() >= necesario) ? lugarAncho : lugarAngosto;
+                if (!lugar.equals(((BorderLayout) panel.getLayout()).getConstraints(movil))) {
+                    panel.remove(movil);
+                    panel.add(movil, lugar);
+                    panel.revalidate();
+                }
+            }
+        });
+    }
+
     /** Arma la ficha (lado derecho) con sus tres partes: datos, repuestos y costos. */
     private JPanel armarFicha() {
         // 1) Datos de la orden: a la izquierda el vehiculo, a la derecha el trabajo
@@ -313,7 +343,8 @@ public class reparaciones extends javax.swing.JFrame {
 
         // Botones de la orden, a la derecha del numero
         Estilo.botonPrimario(btnAvanzar);
-        JButton btnHistorial = new JButton("Historial del vehículo");
+        JButton btnHistorial = new JButton("Historial");
+        btnHistorial.setToolTipText("Ver todas las reparaciones de este vehículo");
         Estilo.botonSecundario(btnHistorial);
         btnHistorial.addActionListener(e -> verHistorial());
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -321,11 +352,13 @@ public class reparaciones extends javax.swing.JFrame {
         botones.add(btnHistorial);
         botones.add(btnAvanzar);
 
-        JPanel encabezadoFicha = new JPanel(new BorderLayout());
+        JPanel encabezadoFicha = new JPanel(new BorderLayout(0, 8));
         encabezadoFicha.setOpaque(false);
         encabezadoFicha.setBorder(new EmptyBorder(0, 0, 10, 0));
         encabezadoFicha.add(filaOrden, BorderLayout.WEST);
         encabezadoFicha.add(botones, BorderLayout.EAST);
+        // Si no entran al lado del numero, los botones bajan a un segundo renglon
+        acomodarSegunAncho(encabezadoFicha, filaOrden, botones, BorderLayout.EAST, BorderLayout.SOUTH);
 
         lblVehiculo.setFont(lblVehiculo.getFont().deriveFont(Font.BOLD, 14f));
         JPanel vehiculo = columna(lblVehiculo, Box.createVerticalStrut(4), lblCliente,
@@ -360,22 +393,31 @@ public class reparaciones extends javax.swing.JFrame {
         bloqueRepuestos.add(tituloSeccion("REPUESTOS USADOS"), BorderLayout.NORTH);
         bloqueRepuestos.add(scrollRepuestos, BorderLayout.CENTER);
 
-        // 3) Costos en una sola linea: repuestos + mano de obra = total
+        // 3) Costos: repuestos + mano de obra = total
         lblCostoRepuestos.setFont(Estilo.NEGRITA);
         lblManoObra.setFont(Estilo.NEGRITA);
         lblTotal.setFont(lblTotal.getFont().deriveFont(Font.BOLD, 20f));
         lblTotal.setForeground(Estilo.PRIMARIO);
-        JPanel pie = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel suma = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        suma.setOpaque(false);
+        suma.add(new JLabel("Repuestos"));
+        suma.add(lblCostoRepuestos);
+        suma.add(new JLabel(" + Mano de obra"));
+        suma.add(lblManoObra);
+        JPanel total = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        total.setOpaque(false);
+        total.add(new JLabel(" = TOTAL"));
+        total.add(lblTotal);
+
+        JPanel pie = new JPanel(new BorderLayout(0, 2));
         pie.setOpaque(false);
         pie.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, Estilo.BORDE),
                 new EmptyBorder(10, 0, 0, 0)));
-        pie.add(new JLabel("Repuestos"));
-        pie.add(lblCostoRepuestos);
-        pie.add(new JLabel("  +  Mano de obra"));
-        pie.add(lblManoObra);
-        pie.add(new JLabel("  =  TOTAL"));
-        pie.add(lblTotal);
+        pie.add(suma, BorderLayout.CENTER);
+        pie.add(total, BorderLayout.EAST);
+        // Si no entra en un renglon, el total baja al segundo
+        acomodarSegunAncho(pie, suma, total, BorderLayout.EAST, BorderLayout.SOUTH);
 
         JPanel ficha = new JPanel(new BorderLayout(0, 12));
         ficha.setBackground(Estilo.SUPERFICIE);
@@ -468,7 +510,7 @@ public class reparaciones extends javax.swing.JFrame {
         String siguiente = r.getEstadoSiguiente();
         btnAvanzar.setVisible(siguiente != null);
         if (siguiente != null) {
-            btnAvanzar.setText(Reparacion.ENTREGADO.equals(siguiente) ? "Marcar como entregado" : "Empezar trabajo");
+            btnAvanzar.setText(Reparacion.ENTREGADO.equals(siguiente) ? "Entregar" : "Empezar trabajo");
         }
         tarjetasFicha.show(panelFicha, "ficha");
     }
